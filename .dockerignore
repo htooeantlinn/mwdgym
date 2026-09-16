@@ -1,11 +1,15 @@
-# Keep build context small
-.git/
+.git
 .gitignore
 .DS_Store
-*.md
-docker-compose*.y*ml
-docker-compose*.yaml
+.idea
+.vscode
+target/
 frontend/node_modules/
 frontend/dist/
-target/
 uploads/
+.env
+.env.*
+!.env.example
+*.md
+*.log
+.mvn/

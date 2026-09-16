@@ -1,67 +1,66 @@
-# MWD GYM - Single container: nginx (port 80) + Spring Boot (port 8080)
-# One command:  docker compose up -d --build
-# Access:       http://localhost:8081
+# ============================================================
+# MWD GYM — Multi-stage Dockerfile
+# Stage 1: Build React frontend (Node)
+# Stage 2: Build Spring Boot backend (Maven + JDK)
+# Stage 3: Runtime (Alpine + Nginx + JRE)
+# ============================================================
 
-# ── Build stage ────────────────────────────────────────────────────
-FROM eclipse-temurin:26-jdk-alpine AS builder
-WORKDIR /build
+# ----------------------------------------------------------
+# Stage 1 — Build React frontend
+# ----------------------------------------------------------
+FROM node:22-alpine AS frontend-build
 
-RUN apk add --no-cache maven nodejs npm
+WORKDIR /app/frontend
 
-# Spring Boot
-COPY pom.xml ./
-RUN mvn dependency:go-offline
-COPY src ./src
-RUN mvn clean package -DskipTests
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --ignore-scripts
 
-# React
-WORKDIR /build/frontend
-COPY frontend/package*.json ./
-RUN npm ci
 COPY frontend/ ./
-ARG VITE_API_BASE_URL=/api
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
-# ── Runtime stage ──────────────────────────────────────────────────
-FROM eclipse-temurin:26-jre-alpine
-RUN apk add --no-cache nginx supervisor curl gettext
+# ----------------------------------------------------------
+# Stage 2 — Build Spring Boot JAR
+# ----------------------------------------------------------
+FROM eclipse-temurin:21-jdk-alpine AS backend-build
+
+RUN apk add --no-cache maven
+
 WORKDIR /app
 
-COPY --from=builder /build/target/*.jar app.jar
-COPY --from=builder /build/frontend/dist /usr/share/nginx/html
-COPY frontend/nginx.conf /etc/nginx/templates/default.conf.template
+COPY pom.xml ./
+RUN mvn dependency:go-offline -B
 
-# ── Supervisord config ────────────────────────────────────────────
-RUN mkdir -p /etc/supervisor/conf.d /var/log/supervisor /etc/nginx/http.d
-COPY <<EOF /etc/supervisor/conf.d/supervisord.conf
-[supervisord]
-nodaemon=true
-logfile=/var/log/supervisord.log
-pidfile=/var/run/supervisord.pid
-childlogdir=/var/log/supervisor
+COPY src/ ./src/
+RUN mvn package -DskipTests -B
 
-[program:nginx]
-command=nginx -g "daemon off;"
-autorestart=true
-priority=10
+# ----------------------------------------------------------
+# Stage 3 — Production runtime
+# ----------------------------------------------------------
+FROM eclipse-temurin:21-jre-alpine AS runtime
 
-[program:springboot]
-command=java -jar /app/app.jar
-autorestart=true
-priority=20
-startsecs=10
-EOF
+RUN apk add --no-cache nginx curl bash
 
-# ── Entrypoint ────────────────────────────────────────────────────
-COPY <<'ENTRYPOINT' /entrypoint.sh
-#!/bin/sh
-set -e
-mkdir -p /etc/nginx/http.d /var/log/supervisor
-envsubst '${BACKEND_UPSTREAM}' < /etc/nginx/templates/default.conf.template > /etc/nginx/http.d/default.conf
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
-ENTRYPOINT
-RUN chmod +x /entrypoint.sh
+# Nginx: remove default config, prepare directories
+RUN rm -f /etc/nginx/http.d/default.conf \
+    && mkdir -p /var/cache/nginx /var/log/nginx /run/nginx
 
-EXPOSE 80
-ENTRYPOINT ["/entrypoint.sh"]
+# Copy built frontend from Stage 1
+COPY --from=frontend-build /app/frontend/dist /usr/share/nginx/html
+
+# Copy built JAR from Stage 2
+COPY --from=backend-build /app/target/*.jar /app/app.jar
+
+# Copy configs
+COPY frontend/nginx.conf /etc/nginx/http.d/default.conf
+
+# Uploads directory
+RUN mkdir -p /app/uploads
+
+EXPOSE 8081
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD curl -f http://localhost:8081/ || exit 1
+
+WORKDIR /app
+
+CMD ["sh", "-c", "nginx && java -jar /app/app.jar"]
