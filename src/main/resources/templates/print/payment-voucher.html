@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Voucher - MWD Gym</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="print-sheet-body">
+<div class="no-print toolbar">
+    <a th:href="@{'/pdf/payment/' + ${payment.id}}" class="btn">Download PDF</a>
+    <button type="button" class="btn" onclick="window.print()">Print</button>
+    <a th:href="@{/payments}" class="btn btn-secondary">&laquo; Back</a>
+</div>
+
+<div class="report-sheet">
+    <div class="report-head">
+        <h1>MWD Gym</h1>
+        <h2>Payment Voucher</h2>
+    </div>
+    <table class="sheet-table">
+        <tr><th>Voucher No</th><td th:text="${payment.id}"></td></tr>
+        <tr><th>Member</th><td th:text="${payment.member.name}"></td></tr>
+        <tr><th>Payment Date</th><td th:text="${payment.paymentDate}"></td></tr>
+        <tr><th>Due Date</th><td th:text="${payment.dueDate}"></td></tr>
+        <tr><th>Status</th><td th:text="${payment.status}"></td></tr>
+        <tr class="total"><th>Amount</th><td th:text="${payment.amount} + ' MMK'"></td></tr>
+    </table>
+    <p class="report-foot">Generated on <span th:text="${#temporals.format(#temporals.createToday(), 'yyyy-MM-dd')}"></span> &middot; MWD Gym Management System</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,24 @@
+# MWD GYM - SINGLE CONTAINER on port 8081
+#   docker compose up -d --build
+#   http://localhost:8081
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mwdgym-app:latest
+    container_name: mwdgym-app
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      - PORT=8080
+      - DB_URL=jdbc:mysql://host.docker.internal:3306/mwdgymdb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - DB_USERNAME=${DB_USERNAME:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-US@i1234}
+      - BACKEND_UPSTREAM=http://127.0.0.1:8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./uploads:/app/uploads

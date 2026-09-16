@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Card - MWD Gym</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="print-sheet-body">
+<div class="no-print toolbar">
+    <a th:href="@{'/card/qr/' + ${member.cardCode}}" class="btn">Download QR</a>
+    <a th:href="@{'/card/barcode/' + ${member.cardCode}}" class="btn">Download Barcode</a>
+    <button type="button" class="btn" onclick="window.print()">Print Card</button>
+    <a th:href="@{/members}" class="btn btn-secondary">&laquo; Back</a>
+</div>
+
+<div class="member-card">
+    <div class="mc-top">
+        <span class="mc-brand">MWD <b>GYM</b></span>
+        <span class="mc-badge" th:text="${member.status}"></span>
+    </div>
+    <div class="mc-body">
+        <div class="mc-qr">
+            <img th:src="@{'/card/qr/' + ${member.cardCode}}" alt="QR" />
+        </div>
+        <div class="mc-info">
+            <p class="mc-label">MEMBER</p>
+            <h2 th:text="${member.name}">Name</h2>
+            <p class="mc-row"><span th:text="'Plan: ' + ${member.planType}"></span></p>
+            <p class="mc-row"><span th:text="'Valid to: ' + ${member.endDate}"></span></p>
+            <p class="mc-code" th:text="${member.cardCode}">MWD000001</p>
+        </div>
+    </div>
+    <div class="mc-barcode">
+        <img th:src="@{'/card/barcode/' + ${member.cardCode}}" alt="Barcode" />
+        <span th:text="${member.cardCode}">MWD000001</span>
+    </div>
+</div>
+
+<p class="report-foot">Scan with any RFID/QR reader at the front desk &middot; MWD Gym Management System</p>
+</body>
+</html>

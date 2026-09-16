@@ -1,0 +1,180 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #f8fafc;
+    --bg-card: #ffffff;
+    --text-primary: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --brand: #dc2626;
+    --brand-soft: #fef2f2;
+    --brand-border: #fee2e2;
+    --brand-text: #991b1b;
+  }
+
+  html {
+    height: auto;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    min-height: 100vh;
+    height: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    letter-spacing: -0.011em;
+  }
+
+  #root {
+    min-height: 100vh;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .lucide {
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  input, textarea, select, button {
+    font-family: inherit;
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 150, 0.5);
+}
+
+/* ===== Material / AI Studio Design Tokens ===== */
+
+/* Compact type scale — reduced for tighter space */
+.display-1 { font-size: 1.75rem; line-height: 2rem; letter-spacing: -0.02em; font-weight: 800; }
+.display-2 { font-size: 1.25rem; line-height: 1.65rem; letter-spacing: -0.015em; font-weight: 700; }
+.title-lg { font-size: 1rem; line-height: 1.35rem; letter-spacing: -0.01em; font-weight: 650; }
+.title-md { font-size: 0.9375rem; line-height: 1.3rem; letter-spacing: -0.006em; font-weight: 600; }
+.label-lg { font-size: 0.8125rem; line-height: 1.15rem; font-weight: 550; letter-spacing: 0.005em; }
+.label-md { font-size: 0.75rem; line-height: 1rem; font-weight: 550; }
+.body-sm { font-size: 0.75rem; line-height: 1.15rem; }
+.overline {
+  font-size: 0.625rem;
+  line-height: 0.875rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Card + surface elevation — compact */
+.surface {
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+}
+.surface-raised {
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+:root {
+  --surface-color: #ffffff;
+}
+.dark {
+  --surface-color: #17171c;
+}
+
+/* Sidebar nav item — compact */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.002em;
+  color: var(--nav-idle);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root { --nav-idle: #3f3f46; --nav-hover-bg: rgba(0,0,0,0.045); }
+.dark { --nav-idle: #9ca3af; --nav-hover-bg: rgba(255,255,255,0.06); }
+.nav-item:hover { background: var(--nav-hover-bg); color: var(--nav-active-text); }
+.nav-item-active {
+  background: var(--nav-active-bg);
+  color: var(--nav-active-text);
+  border-color: var(--nav-active-border);
+  font-weight: 600;
+}
+:root {
+  --nav-active-bg: #fef2f2;
+  --nav-active-text: #b91c1c;
+  --nav-active-border: #fee2e2;
+}
+.dark {
+  --nav-active-bg: rgba(220, 38, 38, 0.12);
+  --nav-active-text: #fca5a5;
+  --nav-active-border: rgba(220, 38, 38, 0.25);
+}
+
+/* Grid + chart axis helpers */
+.axis-tick { font-size: 0.6875rem; font-weight: 550; letter-spacing: 0.02em; }
+.gridline { stroke: currentColor; opacity: 0.12; }
+
+/* Keyboard-focused ring (Material state layer) */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Glassmorphism helpers */
+.glass-panel {
+  background: rgba(18, 18, 21, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-light {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}

@@ -1,0 +1,11 @@
+# Keep build context small
+.git/
+.gitignore
+.DS_Store
+*.md
+docker-compose*.y*ml
+docker-compose*.yaml
+frontend/node_modules/
+frontend/dist/
+target/
+uploads/

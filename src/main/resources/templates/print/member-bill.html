@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Membership Bill - MWD Gym</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="print-sheet-body">
+<div class="no-print toolbar">
+    <a th:href="@{'/pdf/member/' + ${member.id}}" class="btn">Download PDF</a>
+    <button type="button" class="btn" onclick="window.print()">Print</button>
+    <a th:href="@{/members}" class="btn btn-secondary">&laquo; Back</a>
+</div>
+
+<div class="report-sheet">
+    <div class="report-head">
+        <h1>MWD Gym</h1>
+        <h2>Membership Bill</h2>
+    </div>
+    <table class="sheet-table">
+        <tr><th>Member</th><td th:text="${member.name}"></td></tr>
+        <tr><th>Contact</th><td th:text="${member.contact}"></td></tr>
+        <tr><th>Address</th><td th:text="${member.address}"></td></tr>
+        <tr><th>Plan</th><td th:text="${member.planType}"></td></tr>
+        <tr><th>Start Date</th><td th:text="${member.startDate}"></td></tr>
+        <tr><th>End Date</th><td th:text="${member.endDate}"></td></tr>
+        <tr><th>Status</th><td th:text="${member.status}"></td></tr>
+        <tr class="total"><th>Amount</th><td th:text="${member.amount} + ' MMK'"></td></tr>
+    </table>
+
+    <h3 class="report-sub">Payment History</h3>
+    <table class="sheet-table">
+        <thead>
+        <tr><th>Date</th><th>Due</th><th>Amount</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="p : ${payments}">
+            <td th:text="${p.paymentDate}"></td>
+            <td th:text="${p.dueDate}"></td>
+            <td th:text="${p.amount} + ' MMK'"></td>
+            <td th:text="${p.status}"></td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(payments)}">
+            <td colspan="4" class="text-muted">No payments yet.</td>
+        </tr>
+        </tbody>
+    </table>
+    <p class="report-foot">Generated on <span th:text="${#temporals.format(#temporals.createToday(), 'yyyy-MM-dd')}"></span> &middot; MWD Gym Management System</p>
+</div>
+</body>
+</html>
