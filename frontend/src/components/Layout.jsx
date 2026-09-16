@@ -30,7 +30,8 @@ import {
   ShoppingBag,
   RotateCcw,
   Coins,
-  Globe
+  Globe,
+  UtensilsCrossed
 } from 'lucide-react';
 
 export const Layout = () => {
@@ -92,6 +93,7 @@ export const Layout = () => {
       label: 'Training',
       items: [
         { label: 'Workouts', to: '/workout-plans', icon: Dumbbell, show: hasRole('ADMIN', 'TRAINER') },
+        { label: 'Diet Plans', to: '/diet-plans', icon: UtensilsCrossed, show: hasRole('ADMIN', 'TRAINER') },
         { label: 'Exercises', to: '/exercises', icon: BookOpen, show: hasRole('ADMIN', 'TRAINER') },
         { label: 'Plans', to: '/plans', icon: Layers, show: isAdmin },
       ],

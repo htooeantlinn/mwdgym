@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${plan.name} + ' - Diet Plan'">Diet Plan</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; color: #1e293b; }
+        @media print {
+            body { background: #fff; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+            .no-print { display: none !important; }
+            @page { size: A4; margin: 12mm; }
+        }
+    </style>
+    <style th:if="${plan.theme == 'red'}">
+        :root { --hdr: #b41e1e; --hdr-fg: #fff; --sec-bg: #fee2e2; --sec-fg: #b41e1e; --sec-bdr: #e2b4b4; --note: #b41e1e; }
+    </style>
+    <style th:if="${plan.theme == 'bw'}">
+        :root { --hdr: #1a1a1a; --hdr-fg: #fff; --sec-bg: #f0f0f0; --sec-fg: #444; --sec-bdr: #ccc; --note: #008080; }
+    </style>
+    <style th:unless="${plan.theme == 'red' or plan.theme == 'bw'}">
+        :root { --hdr: #2c3e50; --hdr-fg: #fff; --sec-bg: #ecf0f1; --sec-fg: #2c3e50; --sec-bdr: #e2e8f0; --note: #008080; }
+    </style>
+    <style>
+        @media screen { .pw-wrap { max-width: 794px; margin: 0 auto; padding: 20px 16px; } }
+        .pw-title { font-size: 32px; font-weight: 700; margin-bottom: 4px; }
+        .pw-notes { font-size: 16px; color: #64748b; margin-bottom: 16px; }
+        .pw-block { break-inside: avoid; page-break-inside: avoid; border: 1px solid var(--sec-bdr); border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+        .pw-hdr { background: var(--hdr); color: var(--hdr-fg); text-align: center; font-weight: 700; padding: 12px; font-size: 18px; letter-spacing: 0.3px; }
+        .pw-sec { background: var(--sec-bg); font-weight: 700; padding: 9px 14px; font-size: 15px; color: var(--sec-fg); border-top: 1px solid var(--sec-bdr); }
+        .pw-tbl { width: 100%; border-collapse: collapse; }
+        .pw-tbl th { background: #f8fafc; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; padding: 7px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; color: #64748b; }
+        .pw-tbl td { padding: 7px 8px; font-size: 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        .pw-tbl tr:last-child td { border-bottom: none; }
+        .pw-n { width: 28px; text-align: center; font-weight: 700; color: #94a3b8; font-size: 14px; }
+        .pw-food { font-weight: 600; }
+        .pw-qty { text-align: center; }
+        .pw-cal { text-align: center; }
+        .pw-macro { width: 40px; text-align: center; font-size: 12px; color: #64748b; }
+        .pw-note { color: var(--note); font-weight: 600; font-size: 14px; }
+        .pw-toolbar { max-width: 794px; margin: 0 auto; padding: 12px 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid #e2e8f0; margin-bottom: 12px; }
+        .pw-toolbar a, .pw-toolbar button { padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: #2c3e50; color: #fff; }
+        .pw-toolbar .btn-secondary { background: #e2e8f0; color: #1e293b; }
+    </style>
+</head>
+<body>
+<div class="pw-toolbar no-print">
+    <a th:href="@{'/api/diet-plans/' + ${plan.id} + '/pdf'}" class="btn-primary">Download PDF</a>
+    <button onclick="window.print()" class="btn-primary">Print</button>
+    <a th:href="@{'/diet-plans/' + ${plan.id} + '/edit'}" class="btn-secondary">Edit Plan</a>
+    <a th:href="@{/diet-plans}" class="btn-secondary">&laquo; Back</a>
+</div>
+
+<div class="pw-wrap">
+    <h1 class="pw-title" th:text="${plan.name}">Diet Plan</h1>
+    <p class="pw-notes" th:if="${plan.notes != null and !plan.notes.isBlank()}" th:text="${plan.notes}"></p>
+
+    <div th:each="meal, mstat : ${content.meals}" class="pw-block">
+        <div class="pw-hdr" th:text="${meal.name}">Breakfast</div>
+        <div class="pw-sec" th:if="${meal.items.size == 0}" style="padding: 20px; text-align: center; color: #94a3b8;">
+            No foods added
+        </div>
+        <table class="pw-tbl" th:if="${meal.items.size > 0}">
+            <thead>
+            <tr>
+                <th class="pw-n">#</th>
+                <th class="pw-food">Food</th>
+                <th class="pw-qty">Qty</th>
+                <th class="pw-cal">Cal</th>
+                <th class="pw-macro" style="width:40px">Protein</th>
+                <th class="pw-macro" style="width:40px">Carbs</th>
+                <th class="pw-macro" style="width:40px">Fat</th>
+                <th class="pw-note" style="width:100px">Note</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item, iter : ${meal.items}">
+                <td class="pw-n" th:text="${iter.count}"></td>
+                <td class="pw-food" th:text="${item.food}"></td>
+                <td class="pw-qty" th:text="${item.quantity}"></td>
+                <td class="pw-cal" th:text="${item.calories}"></td>
+                <td class="pw-macro" th:text="${item.protein}"></td>
+                <td class="pw-macro" th:text="${item.carbs}"></td>
+                <td class="pw-macro" th:text="${item.fat}"></td>
+                <td class="pw-note" th:text="${item.notes}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

@@ -20,6 +20,8 @@ import { Inventory } from './pages/Inventory';
 import { Exercises } from './pages/Exercises';
 import { WorkoutPlans } from './pages/WorkoutPlans';
 import { WorkoutPlanEdit } from './pages/WorkoutPlanEdit';
+import { DietPlans } from './pages/DietPlans';
+import { DietPlanEdit } from './pages/DietPlanEdit';
 import { Plans } from './pages/Plans';
 import { Messenger } from './pages/Messenger';
 import { Report } from './pages/Report';
@@ -132,6 +134,32 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'TRAINER']}>
                 <WorkoutPlanEdit />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Diet Plans */}
+          <Route
+            path="/diet-plans"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'TRAINER']}>
+                <DietPlans />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/diet-plans/new"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'TRAINER']}>
+                <DietPlanEdit />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/diet-plans/:id"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'TRAINER']}>
+                <DietPlanEdit />
               </ProtectedRoute>
             }
           />

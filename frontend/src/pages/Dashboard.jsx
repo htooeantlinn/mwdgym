@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import {
   Users,
   CreditCard,
@@ -18,7 +19,7 @@ import {
   Sparkles
 } from 'lucide-react';
 
-export const Dashboard = () => {
+const DashboardContent = () => {
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -93,7 +94,7 @@ export const Dashboard = () => {
         revenue: Number(stats.revenueTrend.values?.[i] || 0),
       })) || [];
 
-  const maxRevenue = Math.max(...trendList.map(t => Number(t.revenue || 0)), 100000);
+  const maxRevenue = Math.max(100000, ...trendList.map(t => Number(t.revenue || 0)));
 
   // Safely parse plan distribution
   const planDistList = Array.isArray(stats.planDist)
@@ -298,7 +299,7 @@ export const Dashboard = () => {
 
           {/* Line Graph Visualization */}
           <div className="h-64 relative pt-2 pb-2">
-            {trendList.length > 0 ? (
+            {trendList.length > 1 ? (
               <div className="h-full flex flex-col">
                 <div className="flex-1 relative">
                   <svg viewBox="0 0 300 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full overflow-visible">
@@ -469,3 +470,9 @@ export const Dashboard = () => {
     </div>
   );
 };
+
+export const Dashboard = () => (
+  <ErrorBoundary>
+    <DashboardContent />
+  </ErrorBoundary>
+);
