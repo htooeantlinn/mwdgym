@@ -48,7 +48,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/marketplace/plans", "/api/marketplace/plans/**", "/api/marketplace/trending", "/api/marketplace/latest").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/staff/**", "/api/settings/**", "/api/plans/**", "/api/logs/**").hasRole("ADMIN")
-                        .requestMatchers("/api/exercises/**", "/api/workout-plans/**", "/api/diet-plans/**").hasAnyRole("ADMIN", "TRAINER")
+                        .requestMatchers("/api/exercises/**", "/api/workout-plans/**", "/api/diet-plans/**", "/api/foods/**").hasAnyRole("ADMIN", "TRAINER")
                         .requestMatchers("/api/members/**", "/api/payments/**", "/api/inventory/**", "/api/reports/**")
                         .hasAnyRole("ADMIN", "STAFF", "TRAINER")
                         .requestMatchers("/api/**").authenticated()

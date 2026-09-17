@@ -22,6 +22,7 @@ import { WorkoutPlans } from './pages/WorkoutPlans';
 import { WorkoutPlanEdit } from './pages/WorkoutPlanEdit';
 import { DietPlans } from './pages/DietPlans';
 import { DietPlanEdit } from './pages/DietPlanEdit';
+import { Foods } from './pages/Foods';
 import { Plans } from './pages/Plans';
 import { Messenger } from './pages/Messenger';
 import { Report } from './pages/Report';
@@ -160,6 +161,16 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'TRAINER']}>
                 <DietPlanEdit />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Food Library */}
+          <Route
+            path="/foods"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'TRAINER']}>
+                <Foods />
               </ProtectedRoute>
             }
           />

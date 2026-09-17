@@ -29,7 +29,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     private static final Set<String> SPA_ROUTES = Set.of(
             "/", "/login", "/signup", "/dashboard", "/members", "/payments", "/inventory",
-            "/workout-plans", "/exercises", "/plans", "/messenger", "/report", "/staff",
+            "/workout-plans", "/exercises", "/diet-plans", "/foods", "/plans", "/messenger", "/report", "/staff",
             "/settings", "/profile", "/calculator", "/timer", "/logs"
     );
 

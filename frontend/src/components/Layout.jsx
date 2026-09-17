@@ -31,7 +31,8 @@ import {
   RotateCcw,
   Coins,
   Globe,
-  UtensilsCrossed
+  UtensilsCrossed,
+  Apple
 } from 'lucide-react';
 
 export const Layout = () => {
@@ -92,26 +93,27 @@ export const Layout = () => {
     {
       label: 'Training',
       items: [
-        { label: 'Workouts', to: '/workout-plans', icon: Dumbbell, show: hasRole('ADMIN', 'TRAINER') },
+        { label: 'Workouts Plans', to: '/workout-plans', icon: Dumbbell, show: hasRole('ADMIN', 'TRAINER') },
         { label: 'Diet Plans', to: '/diet-plans', icon: UtensilsCrossed, show: hasRole('ADMIN', 'TRAINER') },
         { label: 'Exercises', to: '/exercises', icon: BookOpen, show: hasRole('ADMIN', 'TRAINER') },
+        { label: 'Foods', to: '/foods', icon: Apple, show: hasRole('ADMIN', 'TRAINER') },
         { label: 'Plans', to: '/plans', icon: Layers, show: isAdmin },
       ],
     },
     {
       label: 'Shop',
       items: [
+        { label: 'Marketplace', to: '/marketplace', icon: Store, show: true },
         { label: 'Store', to: '/shop', icon: ShoppingBag, show: true },
         { label: 'Coins', to: '/coin-shop', icon: Coins, show: true },
-        { label: 'Browse', to: '/marketplace', icon: Store, show: true },
-        { label: 'Purchases', to: '/my-purchases', icon: ShoppingBag, show: true },
-        { label: 'My Plans', to: '/trainer-plans', icon: Dumbbell, show: hasRole('TRAINER', 'ADMIN') },
-        { label: 'Refunds', to: '/trainer-refunds', icon: RotateCcw, show: hasRole('TRAINER', 'ADMIN') },
-        { label: 'Manage', to: '/admin/marketplace', icon: Store, show: isAdmin },
       ],
     },
     {
       items: [
+        { label: 'My Plans', to: '/trainer-plans', icon: Dumbbell, show: hasRole('TRAINER', 'ADMIN') },
+        { label: 'Purchases', to: '/my-purchases', icon: ShoppingBag, show: true },
+        { label: 'Refunds', to: '/trainer-refunds', icon: RotateCcw, show: hasRole('TRAINER', 'ADMIN') },
+        { label: 'Manage', to: '/admin/marketplace', icon: Store, show: isAdmin },
         { label: 'Reports', to: '/report', icon: FileText, show: user?.role !== 'CLIENT' },
       ],
     },

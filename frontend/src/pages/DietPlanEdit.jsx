@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/client';
-import { Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Search, X, MoveUp, MoveDown } from 'lucide-react';
 
 const DEFAULT_MEALS = () => [
   { name: 'Breakfast', items: [] },
@@ -31,7 +31,22 @@ export const DietPlanEdit = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  // Food library state for picker
+  const [foodLib, setFoodLib] = useState([]);
+  const [pickerMealIndex, setPickerMealIndex] = useState(null);
+  const [libSearch, setLibSearch] = useState('');
+
   useEffect(() => {
+    const fetchLib = async () => {
+      try {
+        const res = await api.get('/foods');
+        setFoodLib(res.data || []);
+      } catch (e) {
+        console.error('Failed to load foods', e);
+      }
+    };
+    fetchLib();
+
     if (!id) {
       setMeals(DEFAULT_MEALS());
       return;
@@ -102,6 +117,49 @@ export const DietPlanEdit = () => {
       )
     );
   };
+
+  const handleAddFoodFromLib = (f) => {
+    if (pickerMealIndex === null) return;
+    setMeals((prev) =>
+      prev.map((m, i) =>
+        i === pickerMealIndex
+          ? {
+              ...m,
+              items: [
+                ...(m.items || []),
+                {
+                  food: f.name || '',
+                  quantity: f.defaultQuantity || '',
+                  calories: f.defaultCalories || '',
+                  protein: f.defaultProtein || '',
+                  carbs: f.defaultCarbs || '',
+                  fat: f.defaultFat || '',
+                  notes: f.defaultNote || '',
+                },
+              ],
+            }
+          : m
+      )
+    );
+  };
+
+  const handleMoveFood = (mIndex, fIndex, dir) => {
+    setMeals((prev) => {
+      const items = [...(prev[mIndex].items || [])];
+      const target = fIndex + dir;
+      if (target < 0 || target >= items.length) return prev;
+      const tmp = items[fIndex];
+      items[fIndex] = items[target];
+      items[target] = tmp;
+      return prev.map((m, i) => (i === mIndex ? { ...m, items } : m));
+    });
+  };
+
+  const filteredLib = foodLib.filter(
+    (f) =>
+      f.name?.toLowerCase().includes(libSearch.toLowerCase()) ||
+      f.category?.toLowerCase().includes(libSearch.toLowerCase())
+  );
 
   const removeFood = (mIndex, fIndex) => {
     setMeals((prev) =>
@@ -231,9 +289,25 @@ export const DietPlanEdit = () => {
                         <input type="text" value={food.fat || ''} onChange={(e) => updateFood(mIndex, fIndex, 'fat', e.target.value)} className={inputCls} />
                       </td>
                       <td className="p-1.5">
-                        <button onClick={() => removeFood(mIndex, fIndex)} className="text-rose-500 hover:text-rose-400">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleMoveFood(mIndex, fIndex, -1)}
+                            disabled={fIndex === 0}
+                            className="text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                          >
+                            <MoveUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleMoveFood(mIndex, fIndex, 1)}
+                            disabled={fIndex === (meal.items || []).length - 1}
+                            className="text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                          >
+                            <MoveDown className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => removeFood(mIndex, fIndex)} className="text-rose-500 hover:text-rose-400">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -244,9 +318,20 @@ export const DietPlanEdit = () => {
             <p className="text-xs text-slate-400">No foods added yet.</p>
           )}
 
-          <button onClick={() => addFood(mIndex)} className="text-xs font-semibold text-red-500 hover:underline">
-            + Add Food
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setLibSearch('');
+                setPickerMealIndex(mIndex);
+              }}
+              className="h-8 px-3 inline-flex items-center gap-1 rounded-lg bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs hover:bg-emerald-600 hover:text-white transition"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add from Food Library
+            </button>
+            <button onClick={() => addFood(mIndex)} className="text-xs font-semibold text-slate-500 hover:underline">
+              + Blank row
+            </button>
+          </div>
         </div>
       ))}
 
@@ -262,6 +347,64 @@ export const DietPlanEdit = () => {
           Cancel
         </button>
       </div>
+
+      {/* Food Picker Modal */}
+      {pickerMealIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#121215] border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-zinc-800 mb-4">
+              <div>
+                <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
+                  Add Food to {meals[pickerMealIndex]?.name}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-zinc-400">Select food from library — defaults fill in, edit after</p>
+              </div>
+              <button onClick={() => setPickerMealIndex(null)} className="p-1 rounded text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="relative mb-4">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={libSearch}
+                onChange={(e) => setLibSearch(e.target.value)}
+                placeholder="Search by food or category..."
+                className="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+              {filteredLib.length === 0 && (
+                <p className="text-xs text-slate-400 text-center py-6">No foods found. Add them in the Food Library first.</p>
+              )}
+              {filteredLib.map((f) => (
+                <div
+                  key={f.id}
+                  onClick={() => handleAddFoodFromLib(f)}
+                  className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:border-emerald-500/30 border border-transparent cursor-pointer transition flex items-center justify-between text-xs"
+                >
+                  <div>
+                    <span className="font-bold text-slate-900 dark:text-white block">{f.name}</span>
+                    <span className="text-[10px] text-slate-400">
+                      {f.category} • {f.defaultQuantity} • {f.defaultCalories} cal • P:{f.defaultProtein} C:{f.defaultCarbs} F:{f.defaultFat}
+                    </span>
+                  </div>
+                  <Plus className="w-4 h-4 text-emerald-500 shrink-0" />
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setPickerMealIndex(null)}
+              className="mt-4 h-10 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
