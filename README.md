@@ -149,3 +149,11 @@ For issues, check:
 2. Container status: `docker compose ps`
 3. Verify MySQL is running on host
 4. Check Docker daemon is running
+
+```bash
+mysqldump --set-gtid-purged=OFF -u root -p mwdgymdb > mwdgymdb_backup.sql
+
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS mwdgymdb;"
+
+mysql -u root -p mwdgymdb < mwdgymdb_backup.sql
+```
