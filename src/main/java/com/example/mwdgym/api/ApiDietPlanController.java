@@ -1,15 +1,23 @@
 package com.example.mwdgym.api;
 
 import com.example.mwdgym.model.DietPlan;
+import com.example.mwdgym.model.diet.DietPlanContent;
 import com.example.mwdgym.repository.DietPlanRepository;
 import com.example.mwdgym.service.DietPlanPdfService;
+import com.example.mwdgym.service.DietPlanService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.thymeleaf.ITemplateEngine;
+import org.thymeleaf.context.Context;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/diet-plans")
@@ -17,10 +25,15 @@ public class ApiDietPlanController {
 
     private final DietPlanRepository repository;
     private final DietPlanPdfService pdfService;
+    private final DietPlanService dietPlanService;
+    private final ITemplateEngine templateEngine;
 
-    public ApiDietPlanController(DietPlanRepository repository, DietPlanPdfService pdfService) {
+    public ApiDietPlanController(DietPlanRepository repository, DietPlanPdfService pdfService,
+                                 DietPlanService dietPlanService, ITemplateEngine templateEngine) {
         this.repository = repository;
         this.pdfService = pdfService;
+        this.dietPlanService = dietPlanService;
+        this.templateEngine = templateEngine;
     }
 
     @GetMapping("")
@@ -79,12 +92,68 @@ public class ApiDietPlanController {
                                          @RequestParam(defaultValue = "default") String theme) {
         return repository.findById(id).map(plan -> {
             if (theme != null && !theme.isBlank()) plan.setTheme(theme);
-            byte[] pdf = pdfService.generatePdf(plan);
+            byte[] pdf;
+            try {
+                pdf = browserPdf(plan);
+            } catch (Exception e) {
+                pdf = pdfService.generatePdf(plan);
+            }
             String filename = plan.getName().replaceAll("[^a-zA-Z0-9._-]", "_") + ".pdf";
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                     .body(pdf);
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    // Render the print page with headless Chromium so Myanmar text shapes
+    // exactly like in the browser. Falls back to iText when unavailable.
+    private byte[] browserPdf(DietPlan plan) throws Exception {
+        DietPlanContent content;
+        try {
+            content = dietPlanService.normalizeContent(dietPlanService.parseContent(plan.getContentJson()));
+        } catch (Exception e) {
+            content = dietPlanService.defaultContent();
+        }
+        Context ctx = new Context();
+        ctx.setVariable("plan", plan);
+        ctx.setVariable("content", content);
+        String html = templateEngine.process("print/diet-plan", ctx);
+
+        Path htmlFile = Files.createTempFile("diet-", ".html");
+        Path pdfFile = Files.createTempFile("diet-", ".pdf");
+        try {
+            Files.writeString(htmlFile, html, StandardCharsets.UTF_8);
+            String chrome = findChrome();
+            Process p = new ProcessBuilder(chrome, "--headless=new", "--no-sandbox", "--disable-gpu",
+                    "--disable-dev-shm-usage", "--no-pdf-header-footer",
+                    "--print-to-pdf=" + pdfFile.toString(), htmlFile.toUri().toString())
+                    .redirectErrorStream(true)
+                    .start();
+            boolean done = p.waitFor(45, TimeUnit.SECONDS);
+            String log = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            if (!done) {
+                p.destroyForcibly();
+                throw new RuntimeException("print timed out: " + log);
+            }
+            if (p.exitValue() != 0 || !Files.exists(pdfFile) || Files.size(pdfFile) == 0) {
+                throw new RuntimeException("print failed: " + log);
+            }
+            return Files.readAllBytes(pdfFile);
+        } finally {
+            Files.deleteIfExists(htmlFile);
+            Files.deleteIfExists(pdfFile);
+        }
+    }
+
+    private String findChrome() {
+        for (String c : new String[]{"chromium", "chromium-browser", "google-chrome", "google-chrome-stable"}) {
+            try {
+                Process p = new ProcessBuilder(c, "--version").redirectErrorStream(true).start();
+                if (p.waitFor(10, TimeUnit.SECONDS) && p.exitValue() == 0) return c;
+            } catch (Exception ignored) {
+            }
+        }
+        throw new RuntimeException("no headless browser available");
     }
 }

@@ -30,10 +30,34 @@ export const WorkoutPlanEdit = () => {
     { name: 'Day 3 - Legs & Core', exercises: [] },
   ]);
 
-  // Exercise library state for picker
+  // Exercise library state for picker — target { day, ex } where ex=null means day rows
   const [exerciseLib, setExerciseLib] = useState([]);
-  const [pickerDayIndex, setPickerDayIndex] = useState(null);
+  const [pickerTarget, setPickerTarget] = useState(null);
   const [libSearch, setLibSearch] = useState('');
+  const [selectedExIds, setSelectedExIds] = useState([]);
+
+  const normalizeOpt = (o) => ({
+    name: o?.name || '',
+    muscleGroup: o?.muscleGroup || '',
+    sets: o?.sets || '',
+    reps: o?.reps || '',
+    weight: o?.weight || '',
+    notes: o?.notes || '',
+    kind: 'single',
+    optionItems: [],
+  });
+
+  const normalizeEx = (x) => ({
+    id: x?.id ?? Date.now() + Math.random(),
+    name: x?.name || '',
+    muscleGroup: x?.muscleGroup || '',
+    sets: x?.sets || '',
+    reps: x?.reps || '',
+    weight: x?.weight || '',
+    notes: x?.notes || '',
+    kind: ['single', 'choice', 'mix'].includes(x?.kind) ? x.kind : 'single',
+    optionItems: Array.isArray(x?.optionItems) ? x.optionItems.map(normalizeOpt) : [],
+  });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -46,7 +70,10 @@ export const WorkoutPlanEdit = () => {
       const isOldFormat = parsed.warmUp || (parsed.days && parsed.days[0] && (parsed.days[0].day || parsed.days[0].sections));
       if (!isOldFormat) {
         if (parsed.days && Array.isArray(parsed.days) && parsed.days[0] && parsed.days[0].exercises !== undefined) {
-          return parsed.days;
+          return parsed.days.map((d) => ({
+            name: d.name || '',
+            exercises: Array.isArray(d.exercises) ? d.exercises.map(normalizeEx) : [],
+          }));
         }
         return parsed.days || null;
       }
@@ -55,8 +82,7 @@ export const WorkoutPlanEdit = () => {
         for (const w of parsed.warmUp) {
           const label = w.label || 'Warm Up';
           const rows = w.rows || [];
-          const exercises = rows.filter(r => r.name && r.name.trim()).map(r => ({
-            id: Date.now() + Math.random(),
+          const exercises = rows.filter(r => r.name && r.name.trim()).map(r => normalizeEx({
             name: r.name,
             muscleGroup: 'Warm Up',
             sets: r.col1 || '',
@@ -75,8 +101,7 @@ export const WorkoutPlanEdit = () => {
           for (const sec of sections) {
             const secLabel = sec.label || '';
             const rows = sec.rows || [];
-            const exercises = rows.filter(r => r.name && r.name.trim()).map(r => ({
-              id: Date.now() + Math.random(),
+            const exercises = rows.filter(r => r.name && r.name.trim()).map(r => normalizeEx({
               name: r.name,
               muscleGroup: secLabel || dayName,
               sets: r.col1 || '',
@@ -142,20 +167,94 @@ export const WorkoutPlanEdit = () => {
     setDays(updated);
   };
 
-  const handleAddExerciseToDay = (ex) => {
-    if (pickerDayIndex === null) return;
-    const updated = [...days];
-    updated[pickerDayIndex].exercises.push({
-      id: ex.id,
-      name: ex.name,
-      muscleGroup: ex.muscleGroup,
-      sets: ex.defaultSets || '3',
-      reps: ex.defaultReps || '10-12',
-      weight: ex.defaultWeight || '',
-      notes: ex.defaultNote || '',
-    });
-    setDays(updated);
-    setPickerDayIndex(null);
+  const libToRow = (ex) => normalizeEx({
+    id: ex.id,
+    name: ex.name,
+    muscleGroup: ex.muscleGroup,
+    sets: ex.defaultSets || '3',
+    reps: ex.defaultReps || '10-12',
+    weight: ex.defaultWeight || '',
+    notes: ex.defaultNote || '',
+  });
+
+  const toggleSelectEx = (id) => {
+    setSelectedExIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const handleAddSelected = () => {
+    if (!pickerTarget || selectedExIds.length === 0) return;
+    const byId = new Map(exerciseLib.map((e) => [e.id, e]));
+    const toAdd = selectedExIds.map((id) => byId.get(id)).filter(Boolean).map(libToRow);
+    setDays((prev) =>
+      prev.map((d, i) => {
+        if (i !== pickerTarget.day) return d;
+        if (pickerTarget.ex === null || pickerTarget.ex === undefined) {
+          return { ...d, exercises: [...d.exercises, ...toAdd] };
+        }
+        return {
+          ...d,
+          exercises: d.exercises.map((x, j) =>
+            j === pickerTarget.ex
+              ? { ...x, optionItems: [...(x.optionItems || []), ...toAdd.map((t) => ({ ...t, kind: 'single', optionItems: [] }))] }
+              : x
+          ),
+        };
+      })
+    );
+    setSelectedExIds([]);
+  };
+
+  const updateOption = (didx, eidx, oidx, field, val) => {
+    setDays((prev) =>
+      prev.map((d, i) =>
+        i === didx
+          ? {
+              ...d,
+              exercises: d.exercises.map((x, j) =>
+                j === eidx
+                  ? { ...x, optionItems: (x.optionItems || []).map((o, k) => (k === oidx ? { ...o, [field]: val } : o)) }
+                  : x
+              ),
+            }
+          : d
+      )
+    );
+  };
+
+  const addBlankOption = (didx, eidx) => {
+    setDays((prev) =>
+      prev.map((d, i) =>
+        i === didx
+          ? {
+              ...d,
+              exercises: d.exercises.map((x, j) =>
+                j === eidx ? { ...x, optionItems: [...(x.optionItems || []), normalizeOpt({})] } : x
+              ),
+            }
+          : d
+      )
+    );
+  };
+
+  const removeOption = (didx, eidx, oidx) => {
+    setDays((prev) =>
+      prev.map((d, i) =>
+        i === didx
+          ? {
+              ...d,
+              exercises: d.exercises.map((x, j) =>
+                j === eidx ? { ...x, optionItems: (x.optionItems || []).filter((_, k) => k !== oidx) } : x
+              ),
+            }
+          : d
+      )
+    );
+  };
+
+  const openPicker = (day, ex = null) => {
+    setLibSearch('');
+    setSelectedExIds([]);
+    setPickerTarget({ day, ex });
   };
 
   const handleExerciseChange = (didx, eidx, field, val) => {
@@ -345,7 +444,7 @@ export const WorkoutPlanEdit = () => {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setPickerDayIndex(didx)}
+                  onClick={() => openPicker(didx)}
                   className="px-3 py-1.5 rounded-xl bg-red-600/10 text-red-600 dark:bg-red-500/20 dark:text-red-400 font-bold text-xs hover:bg-red-500 hover:text-white transition flex items-center gap-1"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add Exercise
@@ -371,19 +470,27 @@ export const WorkoutPlanEdit = () => {
                 {exList.map((ex, eidx) => (
                   <div
                     key={eidx}
-                    className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs"
+                    className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 space-y-2.5 text-xs"
                   >
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="w-6 h-6 rounded-lg bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold text-xs flex items-center justify-center shrink-0">
-                        {eidx + 1}
-                      </span>
-                      <div className="min-w-0">
-                        <span className="font-bold text-slate-900 dark:text-white block truncate">{ex.name}</span>
-                        <span className="text-[10px] text-slate-400">{ex.muscleGroup}</span>
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="w-6 h-6 rounded-lg bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold text-xs flex items-center justify-center shrink-0">
+                          {eidx + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <span className="font-bold text-slate-900 dark:text-white block truncate">
+                            {ex.name}
+                            {(ex.kind === 'choice' || ex.kind === 'mix') && (
+                              <span className="ml-1.5 text-[10px] font-bold text-red-500">
+                                [{ex.kind === 'choice' ? 'Choose 1' : 'Mix'}]
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-[10px] text-slate-400">{ex.muscleGroup}</span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="grid grid-cols-3 gap-2 w-full md:w-auto">
+                    <div className="grid grid-cols-3 md:grid-cols-5 gap-2 w-full md:w-auto">
                       <div>
                         <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Sets</span>
                         <input
@@ -414,33 +521,125 @@ export const WorkoutPlanEdit = () => {
                           className="w-20 px-2 py-1 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-center font-semibold text-slate-900 dark:text-white focus:outline-none"
                         />
                       </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Note</span>
+                        <input
+                          type="text"
+                          value={ex.notes || ''}
+                          onChange={(e) => handleExerciseChange(didx, eidx, 'notes', e.target.value)}
+                          placeholder="cue..."
+                          className="w-28 px-2 py-1 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs text-slate-700 dark:text-zinc-300 placeholder-slate-400 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Type</span>
+                        <select
+                          value={ex.kind || 'single'}
+                          onChange={(e) => handleExerciseChange(didx, eidx, 'kind', e.target.value)}
+                          className="px-1.5 py-1 text-xs border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none"
+                        >
+                          <option value="single">Single</option>
+                          <option value="choice">Choice</option>
+                          <option value="mix">Mix</option>
+                        </select>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-1 self-end md:self-center">
-                      <button
-                        type="button"
-                        onClick={() => handleMoveExercise(didx, eidx, -1)}
-                        disabled={eidx === 0}
-                        className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"
-                      >
-                        <MoveUp className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMoveExercise(didx, eidx, 1)}
-                        disabled={eidx === exList.length - 1}
-                        className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"
-                      >
-                        <MoveDown className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveExercise(didx, eidx)}
-                        className="p-1 text-slate-400 hover:text-rose-500"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1 self-end md:self-center">
+                        <button
+                          type="button"
+                          onClick={() => handleMoveExercise(didx, eidx, -1)}
+                          disabled={eidx === 0}
+                          className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                        >
+                          <MoveUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveExercise(didx, eidx, 1)}
+                          disabled={eidx === exList.length - 1}
+                          className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                        >
+                          <MoveDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveExercise(didx, eidx)}
+                          className="p-1 text-slate-400 hover:text-rose-500"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
+
+                    {(ex.kind === 'choice' || ex.kind === 'mix') && (
+                      <div className="rounded-xl bg-white dark:bg-zinc-950/40 border border-dashed border-slate-200 dark:border-zinc-700 p-2.5 space-y-2">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-red-500">
+                            {ex.kind === 'choice'
+                              ? `Choice options — pick 1 (${(ex.optionItems || []).length})`
+                              : `Mix components (${(ex.optionItems || []).length})`}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => openPicker(didx, eidx)}
+                            className="h-7 px-2.5 inline-flex items-center gap-1 rounded-lg bg-red-600/10 text-red-600 dark:text-red-400 font-bold text-[11px] hover:bg-red-600 hover:text-white transition"
+                          >
+                            <Plus className="w-3 h-3" /> Add from Exercise Library
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => addBlankOption(didx, eidx)}
+                            className="text-[11px] font-semibold text-slate-500 hover:underline"
+                          >
+                            + Blank row
+                          </button>
+                        </div>
+                        {(ex.optionItems || []).length === 0 && (
+                          <p className="text-xs text-slate-400">No options yet — add from the library or a blank row.</p>
+                        )}
+                        {(ex.optionItems || []).map((opt, oidx) => (
+                          <div key={oidx} className="flex items-center gap-1.5">
+                            <span className="text-red-500 font-bold shrink-0 text-xs">↳</span>
+                            <input
+                              type="text"
+                              value={opt.name || ''}
+                              onChange={(e) => updateOption(didx, eidx, oidx, 'name', e.target.value)}
+                              placeholder="Movement"
+                              className="flex-1 px-2 py-1 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
+                            />
+                            <input
+                              type="text"
+                              value={opt.sets || ''}
+                              onChange={(e) => updateOption(didx, eidx, oidx, 'sets', e.target.value)}
+                              placeholder="Sets"
+                              className="w-14 px-2 py-1 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs text-center text-slate-900 dark:text-white focus:outline-none"
+                            />
+                            <input
+                              type="text"
+                              value={opt.reps || ''}
+                              onChange={(e) => updateOption(didx, eidx, oidx, 'reps', e.target.value)}
+                              placeholder="Reps"
+                              className="w-16 px-2 py-1 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs text-center text-slate-900 dark:text-white focus:outline-none"
+                            />
+                            <input
+                              type="text"
+                              value={opt.weight || ''}
+                              onChange={(e) => updateOption(didx, eidx, oidx, 'weight', e.target.value)}
+                              placeholder="Load"
+                              className="w-16 px-2 py-1 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs text-center text-slate-900 dark:text-white focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeOption(didx, eidx, oidx)}
+                              className="text-slate-400 hover:text-rose-500 shrink-0"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -451,17 +650,19 @@ export const WorkoutPlanEdit = () => {
       </div>
 
       {/* Exercise Picker Modal Drawer */}
-      {pickerDayIndex !== null && (
+      {pickerTarget !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white dark:bg-[#121215] border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl max-h-[85vh] flex flex-col">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-zinc-800 mb-4">
               <div>
                 <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-                  Add Exercise to {days[pickerDayIndex]?.name}
+                  {pickerTarget.ex === null || pickerTarget.ex === undefined
+                    ? `Add Exercise to ${days[pickerTarget.day]?.name}`
+                    : `Add option to ${days[pickerTarget.day]?.exercises?.[pickerTarget.ex]?.name || 'row'}`}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-zinc-400">Select movement from exercise database</p>
+                <p className="text-xs text-slate-500 dark:text-zinc-400">Select movement from exercise database — defaults fill in, edit after</p>
               </div>
-              <button onClick={() => setPickerDayIndex(null)} className="p-1 rounded text-slate-400 hover:text-white">
+              <button onClick={() => setPickerTarget(null)} className="p-1 rounded text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -478,19 +679,59 @@ export const WorkoutPlanEdit = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-              {filteredLib.map((ex) => (
-                <div
-                  key={ex.id}
-                  onClick={() => handleAddExerciseToDay(ex)}
-                  className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900 hover:bg-red-50 dark:hover:bg-red-500/10 hover:border-red-500/30 border border-transparent cursor-pointer transition flex items-center justify-between text-xs"
-                >
-                  <div>
-                    <span className="font-bold text-slate-900 dark:text-white block">{ex.name}</span>
-                    <span className="text-[10px] text-slate-400">{ex.muscleGroup} • {ex.defaultSets} sets • {ex.defaultReps} reps</span>
+              {filteredLib.length === 0 && (
+                <p className="text-xs text-slate-400 text-center py-6">No movements found. Add them in the Exercise Library first.</p>
+              )}
+              {filteredLib.map((ex) => {
+                const checked = selectedExIds.includes(ex.id);
+                return (
+                  <div
+                    key={ex.id}
+                    onClick={() => toggleSelectEx(ex.id)}
+                    className={`p-3 rounded-xl cursor-pointer transition flex items-center gap-3 text-xs border ${
+                      checked
+                        ? 'bg-red-500/10 border-red-500/40'
+                        : 'bg-slate-50 dark:bg-zinc-900 hover:bg-red-50 dark:hover:bg-red-500/10 border-transparent hover:border-red-500/30'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleSelectEx(ex.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="shrink-0 w-4 h-4 accent-red-600"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <span className="font-bold text-slate-900 dark:text-white block">{ex.name}</span>
+                      <span className="text-[10px] text-slate-400 block">{ex.muscleGroup} • {ex.defaultSets} sets • {ex.defaultReps} reps</span>
+                      {ex.defaultNote && (
+                        <span className="text-[10px] text-red-500/90 italic block truncate">
+                          Comment: {ex.defaultNote}
+                        </span>
+                      )}
+                    </div>
+                    <Plus className="w-4 h-4 text-red-500 shrink-0" />
                   </div>
-                  <Plus className="w-4 h-4 text-red-500" />
-                </div>
-              ))}
+                );
+              })}
+            </div>
+
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleAddSelected}
+                disabled={selectedExIds.length === 0}
+                className="flex-1 h-10 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-bold disabled:opacity-40"
+              >
+                Add selected ({selectedExIds.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setPickerTarget(null)}
+                className="h-10 px-5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold"
+              >
+                Done
+              </button>
             </div>
           </div>
         </div>

@@ -38,7 +38,7 @@ RUN mvn package -DskipTests -B
 # ----------------------------------------------------------
 FROM eclipse-temurin:21-jre-alpine AS runtime
 
-RUN apk add --no-cache nginx curl bash
+RUN apk add --no-cache nginx curl bash chromium fontconfig ttf-dejavu
 
 # Nginx: remove default config, prepare directories
 RUN rm -f /etc/nginx/http.d/default.conf \
@@ -52,6 +52,10 @@ COPY --from=backend-build /app/target/*.jar /app/app.jar
 
 # Copy configs
 COPY frontend/nginx.conf /etc/nginx/http.d/default.conf
+
+# Myanmar fonts for headless-Chromium PDF printing (Padauk, OFL licensed)
+COPY --from=backend-build /app/src/main/resources/fonts/*.ttf /usr/share/fonts/TTF/
+RUN fc-cache -f /usr/share/fonts/TTF
 
 # Uploads directory
 RUN mkdir -p /app/uploads

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
-import { Plus, Edit2, Trash2, Download, Apple } from 'lucide-react';
+import { Plus, Edit2, Trash2, Printer, Apple } from 'lucide-react';
 
 export const DietPlans = () => {
   const [plans, setPlans] = useState([]);
@@ -120,12 +120,12 @@ export const DietPlans = () => {
                 <Edit2 className="w-3.5 h-3.5" /> Edit
               </button>
               <a
-                href={`/api/diet-plans/${plan.id}/pdf`}
+                href={`/print/diet-plans/${plan.id}`}
                 target="_blank"
                 rel="noreferrer"
                 className="h-8 px-3 inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-700 dark:text-zinc-200"
               >
-                <Download className="w-3.5 h-3.5" /> PDF
+                <Printer className="w-3.5 h-3.5" /> Print / PDF
               </a>
               <button
                 onClick={() => handleToggle(plan.id)}

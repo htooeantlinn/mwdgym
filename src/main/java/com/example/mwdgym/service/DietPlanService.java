@@ -94,32 +94,16 @@ public class DietPlanService {
                 if (mealNode.has("name") && !mealNode.get("name").isNull()) {
                     meal.setName(mealNode.get("name").asText());
                 }
+                if (mealNode.has("startTime") && !mealNode.get("startTime").isNull()) {
+                    meal.setStartTime(mealNode.get("startTime").asText());
+                }
+                if (mealNode.has("endTime") && !mealNode.get("endTime").isNull()) {
+                    meal.setEndTime(mealNode.get("endTime").asText());
+                }
                 if (mealNode.has("items") && mealNode.get("items").isArray()) {
                     ArrayNode itemsArray = (ArrayNode) mealNode.get("items");
                     for (JsonNode itemNode : itemsArray) {
-                        FoodItem item = new FoodItem();
-                        if (itemNode.has("food") && !itemNode.get("food").isNull()) {
-                            item.setFood(itemNode.get("food").asText());
-                        }
-                        if (itemNode.has("quantity") && !itemNode.get("quantity").isNull()) {
-                            item.setQuantity(itemNode.get("quantity").asText());
-                        }
-                        if (itemNode.has("calories") && !itemNode.get("calories").isNull()) {
-                            item.setCalories(itemNode.get("calories").asText());
-                        }
-                        if (itemNode.has("protein") && !itemNode.get("protein").isNull()) {
-                            item.setProtein(itemNode.get("protein").asText());
-                        }
-                        if (itemNode.has("carbs") && !itemNode.get("carbs").isNull()) {
-                            item.setCarbs(itemNode.get("carbs").asText());
-                        }
-                        if (itemNode.has("fat") && !itemNode.get("fat").isNull()) {
-                            item.setFat(itemNode.get("fat").asText());
-                        }
-                        if (itemNode.has("notes") && !itemNode.get("notes").isNull()) {
-                            item.setNotes(itemNode.get("notes").asText());
-                        }
-                        meal.getItems().add(item);
+                        meal.getItems().add(parseFoodItem(itemNode));
                     }
                 }
                 if (meal.getItems() == null) {
@@ -134,10 +118,52 @@ public class DietPlanService {
         return content;
     }
 
+    private FoodItem parseFoodItem(JsonNode itemNode) {
+        FoodItem item = new FoodItem();
+        if (itemNode.has("food") && !itemNode.get("food").isNull()) {
+            item.setFood(itemNode.get("food").asText());
+        }
+        if (itemNode.has("quantity") && !itemNode.get("quantity").isNull()) {
+            item.setQuantity(itemNode.get("quantity").asText());
+        }
+        if (itemNode.has("calories") && !itemNode.get("calories").isNull()) {
+            item.setCalories(itemNode.get("calories").asText());
+        }
+        if (itemNode.has("protein") && !itemNode.get("protein").isNull()) {
+            item.setProtein(itemNode.get("protein").asText());
+        }
+        if (itemNode.has("carbs") && !itemNode.get("carbs").isNull()) {
+            item.setCarbs(itemNode.get("carbs").asText());
+        }
+        if (itemNode.has("fat") && !itemNode.get("fat").isNull()) {
+            item.setFat(itemNode.get("fat").asText());
+        }
+        if (itemNode.has("notes") && !itemNode.get("notes").isNull()) {
+            item.setNotes(itemNode.get("notes").asText());
+        }
+        if (itemNode.has("kind") && !itemNode.get("kind").isNull()) {
+            item.setKind(itemNode.get("kind").asText());
+        }
+        if (itemNode.has("options") && !itemNode.get("options").isNull()) {
+            item.setOptions(itemNode.get("options").asText());
+        }
+        if (itemNode.has("optionItems") && itemNode.get("optionItems").isArray()) {
+            for (JsonNode optNode : (ArrayNode) itemNode.get("optionItems")) {
+                item.getOptionItems().add(parseFoodItem(optNode));
+            }
+        }
+        if (item.getOptionItems() == null) {
+            item.setOptionItems(new ArrayList<>());
+        }
+        return item;
+    }
+
     public DietPlanContent defaultContent() {
         DietPlanContent content = new DietPlanContent();
         MealBlock breakfast = new MealBlock();
         breakfast.setName("Breakfast");
+        breakfast.setStartTime("07:00");
+        breakfast.setEndTime("08:00");
         FoodItem fi1 = new FoodItem();
         fi1.setFood("Oatmeal");
         fi1.setQuantity("1 cup");
@@ -158,6 +184,8 @@ public class DietPlanService {
 
         MealBlock lunch = new MealBlock();
         lunch.setName("Lunch");
+        lunch.setStartTime("12:00");
+        lunch.setEndTime("13:00");
         FoodItem fi3 = new FoodItem();
         fi3.setFood("Grilled Chicken");
         fi3.setQuantity("150g");
@@ -176,6 +204,8 @@ public class DietPlanService {
 
         MealBlock dinner = new MealBlock();
         dinner.setName("Dinner");
+        dinner.setStartTime("18:00");
+        dinner.setEndTime("19:00");
         FoodItem fi5 = new FoodItem();
         fi5.setFood("Salmon");
         fi5.setQuantity("150g");
@@ -194,6 +224,8 @@ public class DietPlanService {
 
         MealBlock snack = new MealBlock();
         snack.setName("Snacks");
+        snack.setStartTime("15:00");
+        snack.setEndTime("15:30");
         FoodItem fi7 = new FoodItem();
         fi7.setFood("Apple");
         fi7.setQuantity("1 medium");

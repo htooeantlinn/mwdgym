@@ -1,5 +1,8 @@
 package com.example.mwdgym.model.workout;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ExerciseRow {
 
     private String name = "";
@@ -7,6 +10,8 @@ public class ExerciseRow {
     private String col2 = "";
     private String col3 = "";
     private String col4 = "";
+    private String kind = "single";
+    private List<ExerciseRow> optionItems = new ArrayList<>();
 
     public String getName() {
         return name;
@@ -46,5 +51,21 @@ public class ExerciseRow {
 
     public void setCol4(String col4) {
         this.col4 = col4 != null ? col4 : "";
+    }
+
+    public String getKind() {
+        return kind;
+    }
+
+    public void setKind(String kind) {
+        this.kind = kind != null ? kind : "single";
+    }
+
+    public List<ExerciseRow> getOptionItems() {
+        return optionItems;
+    }
+
+    public void setOptionItems(List<ExerciseRow> optionItems) {
+        this.optionItems = optionItems != null ? optionItems : new ArrayList<>();
     }
 }

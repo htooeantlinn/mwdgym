@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/exercises/**", "/api/workout-plans/**", "/api/diet-plans/**", "/api/foods/**").hasAnyRole("ADMIN", "TRAINER")
                         .requestMatchers("/api/members/**", "/api/payments/**", "/api/inventory/**", "/api/reports/**")
                         .hasAnyRole("ADMIN", "STAFF", "TRAINER")
+                        .requestMatchers("/print/**").hasAnyRole("ADMIN", "TRAINER")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
                 .logout(logout -> logout

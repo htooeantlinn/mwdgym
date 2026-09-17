@@ -157,13 +157,7 @@ public class WorkoutPlanPdfService {
                 for (JsonNode e : exs) {
                     String n = e.has("name") ? e.get("name").asText("") : "";
                     if (n == null || n.isBlank()) continue;
-                    ExerciseRow r = new ExerciseRow();
-                    r.setName(n);
-                    r.setCol1(e.has("sets") ? e.get("sets").asText("") : "");
-                    r.setCol2(e.has("reps") ? e.get("reps").asText("") : "");
-                    r.setCol3(e.has("weight") ? e.get("weight").asText("") : "");
-                    r.setCol4(e.has("notes") ? e.get("notes").asText("") : "");
-                    rows.add(r);
+                    rows.add(parseNewFormatRow(e));
                 }
                 if (rows.isEmpty()) continue;
                 PdfPTable block = new PdfPTable(1);
@@ -183,6 +177,25 @@ public class WorkoutPlanPdfService {
         } catch (Exception e) {
             throw new RuntimeException("PDF generation failed (new format)", e);
         }
+    }
+
+    private ExerciseRow parseNewFormatRow(JsonNode e) {
+        ExerciseRow r = new ExerciseRow();
+        r.setName(e.has("name") ? e.get("name").asText("") : "");
+        r.setCol1(e.has("sets") ? e.get("sets").asText("") : "");
+        r.setCol2(e.has("reps") ? e.get("reps").asText("") : "");
+        r.setCol3(e.has("weight") ? e.get("weight").asText("") : "");
+        r.setCol4(e.has("notes") ? e.get("notes").asText("") : "");
+        r.setKind(e.has("kind") ? e.get("kind").asText("single") : "single");
+        JsonNode opts = e.get("optionItems");
+        if (opts != null && opts.isArray()) {
+            for (JsonNode o : opts) {
+                String on = o.has("name") ? o.get("name").asText("") : "";
+                if (on == null || on.isBlank()) continue;
+                r.getOptionItems().add(parseNewFormatRow(o));
+            }
+        }
+        return r;
     }
 
     private PdfPTable buildDayBlock(DayBlock day, Theme th,
@@ -257,12 +270,29 @@ public class WorkoutPlanPdfService {
 
         int idx = 1;
         for (ExerciseRow r : valid) {
+            String kind = r.getKind() != null ? r.getKind().trim().toLowerCase() : "single";
+            boolean hasOptions = r.getOptionItems() != null && !r.getOptionItems().isEmpty();
+            String label = r.getName();
+            if (hasOptions) {
+                label += "  [" + ("choice".equals(kind) ? "Choose 1" : "Mix") + "]";
+            }
             t.addCell(numCell(String.valueOf(idx++), fNum));
-            t.addCell(strCell(r.getName(), fBold, Element.ALIGN_LEFT));
+            t.addCell(strCell(label, fBold, Element.ALIGN_LEFT));
             t.addCell(strCell(r.getCol1(), fTd, Element.ALIGN_CENTER));
             t.addCell(strCell(r.getCol2(), fTd, Element.ALIGN_CENTER));
             t.addCell(strCell(r.getCol3(), fTd, Element.ALIGN_CENTER));
             t.addCell(strCell(r.getCol4(), fNote, Element.ALIGN_LEFT));
+            if (hasOptions) {
+                for (ExerciseRow o : r.getOptionItems()) {
+                    PdfPCell mark = strCell("↳", fNum, Element.ALIGN_CENTER);
+                    t.addCell(mark);
+                    t.addCell(strCell("↳ " + o.getName(), fTd, Element.ALIGN_LEFT));
+                    t.addCell(strCell(o.getCol1(), fTd, Element.ALIGN_CENTER));
+                    t.addCell(strCell(o.getCol2(), fTd, Element.ALIGN_CENTER));
+                    t.addCell(strCell(o.getCol3(), fTd, Element.ALIGN_CENTER));
+                    t.addCell(strCell(o.getCol4(), fNote, Element.ALIGN_LEFT));
+                }
+            }
         }
         return t;
     }

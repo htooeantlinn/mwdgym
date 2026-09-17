@@ -1,5 +1,8 @@
 package com.example.mwdgym.model.diet;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class FoodItem {
     private String food = "";
     private String quantity = "";
@@ -8,6 +11,9 @@ public class FoodItem {
     private String carbs = "";
     private String fat = "";
     private String notes = "";
+    private String kind = "single";
+    private String options = "";
+    private List<FoodItem> optionItems = new ArrayList<>();
 
     public String getFood() { return food; }
 
@@ -36,4 +42,16 @@ public class FoodItem {
     public String getNotes() { return notes; }
 
     public void setNotes(String notes) { this.notes = notes; }
+
+    public String getKind() { return kind; }
+
+    public void setKind(String kind) { this.kind = kind; }
+
+    public String getOptions() { return options; }
+
+    public void setOptions(String options) { this.options = options; }
+
+    public List<FoodItem> getOptionItems() { return optionItems; }
+
+    public void setOptionItems(List<FoodItem> optionItems) { this.optionItems = optionItems; }
 }
