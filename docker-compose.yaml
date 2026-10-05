@@ -1,22 +1,60 @@
 services:
+  # ----------------------------------------------------
+  # Database Service (MySQL 8.0)
+  # ----------------------------------------------------
+  db:
+    image: mysql:8.0
+    container_name: mwdgym-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword123
+      MYSQL_DATABASE: mwdgymdb
+      MYSQL_USER: mwdgym_user
+      MYSQL_PASSWORD: US@i1234
+    ports:
+      # Local MySQL (3306) နဲ့ မငြိအောင် External Port ကို 3307 သို့ ပြောင်းထားသည်
+      - "3307:3306"
+    volumes:
+      # Docker စတင်သည်နှင့် backup SQL ကို အလိုအလျောက် Import လုပ်ပေးမည့် Volume
+      - ./mwdgymdb_backup.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - db_data:/var/lib/mysql
+    networks:
+      - mwdgym-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # ----------------------------------------------------
+  # Application Service (Spring Boot + React + Nginx)
+  # ----------------------------------------------------
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: mwdgym-app
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "${APP_PORT:-8081}:8081"
     environment:
       - PORT=8080
-      - DB_URL=jdbc:mysql://host.docker.internal:3306/${DB_NAME:-mwdgymdb}?createDatabaseIfNotExist=true
-      - DB_USERNAME=${DB_USERNAME:-root}
-      - DB_PASSWORD=${DB_PASSWORD:-US@i1234}
+      # Internal Docker Network ဖြင့် Database ကို တိုက်ရိုက်ချိတ်ဆက်သည်
+      - DB_URL=jdbc:mysql://db:3306/mwdgymdb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - DB_USERNAME=mwdgym_user
+      - DB_PASSWORD=US@i1234
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-*}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     volumes:
       - uploads_data:/app/uploads
+    networks:
+      - mwdgym-net
 
 volumes:
+  db_data:
   uploads_data:
+
+networks:
+  mwdgym-net:
+    driver: bridge
